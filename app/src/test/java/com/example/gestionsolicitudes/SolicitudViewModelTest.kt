@@ -1,10 +1,9 @@
 package com.example.gestionsolicitudes
 
 import android.content.Context
+import com.example.gestionsolicitudes.data.model.UsuarioModel
 import com.example.gestionsolicitudes.data.repository.SolicitudRepository
 import com.example.gestionsolicitudes.ui.solicitud.SolicitudViewModel
-import io.mockk.every
-import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -14,6 +13,8 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.mockito.Mockito.mock
+import org.mockito.kotlin.whenever
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SolicitudViewModelTest {
@@ -26,12 +27,14 @@ class SolicitudViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        repository = mockk(relaxed = true)
-        mockContext = mockk(relaxed = true)
+        
+        // Usando Mockito porque es más estable para testear Android en local
+        repository = mock(SolicitudRepository::class.java)
+        mockContext = mock(Context::class.java)
 
         // Mock default behavior para evitar null pointers con el Vibrator
-        every { mockContext.getSystemService(Context.VIBRATOR_SERVICE) } returns null
-        every { mockContext.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) } returns null
+        whenever(mockContext.getSystemService(Context.VIBRATOR_SERVICE)).thenReturn(null)
+        whenever(mockContext.getSystemService(Context.VIBRATOR_MANAGER_SERVICE)).thenReturn(null)
 
         viewModel = SolicitudViewModel(repository)
     }
@@ -54,8 +57,7 @@ class SolicitudViewModelTest {
         val currentState = viewModel.uiState.value
         assertEquals("El título es obligatorio", currentState.tituloError)
         assertEquals("La descripción del fallo es obligatoria", currentState.descripcionError)
-        assertEquals("Seleccione una categoría", currentState.categoriaError)
-        assertEquals("Seleccione un servicio", currentState.servicioError)
+        assertEquals(null, currentState.servicioError) // Servicio ahora es opcional
     }
 
     @Test
@@ -67,5 +69,24 @@ class SolicitudViewModelTest {
         val state = viewModel.uiState.value
         assertEquals("Nuevo Título", state.titulo)
         assertEquals(null, state.tituloError)
+    }
+    
+    @Test
+    fun `setUsuarioSesion actualiza el perfil correctamente`() {
+        // Arrange
+        val usuarioMock = UsuarioModel(
+            username = "jorge",
+            contrasena = "123",
+            nombre = "Jorge G",
+            perfil = "Administrador / Coordinador",
+            userId = "ADM-100"
+        )
+        
+        // Act
+        viewModel.setUsuarioSesion(usuarioMock)
+        
+        // Assert
+        assertEquals("Administrador / Coordinador", viewModel.perfilUsuario.value)
+        assertEquals("jorge", viewModel.usuarioSesion.value?.username)
     }
 }

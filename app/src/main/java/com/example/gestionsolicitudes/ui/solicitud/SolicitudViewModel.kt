@@ -134,7 +134,8 @@ class SolicitudViewModel(private val repository: SolicitudRepository) : ViewMode
         val tErr = if (actual.titulo.isBlank()) "El título es obligatorio" else null
         val dErr = if (actual.descripcion.isBlank()) "La descripción del fallo es obligatoria" else null
         val cErr = if (actual.categoria.isBlank()) "Seleccione una categoría" else null
-        val sErr = if (actual.servicio.isBlank()) "Seleccione un servicio" else null
+        // El servicio es opcional, así que no arroja error si está vacío
+        val sErr = null
 
         if (tErr != null || dErr != null || cErr != null || sErr != null) {
             dispararVibracion(context, esError = true)

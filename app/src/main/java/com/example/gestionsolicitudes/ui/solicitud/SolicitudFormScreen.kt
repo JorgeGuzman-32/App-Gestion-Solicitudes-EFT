@@ -156,33 +156,111 @@ fun SolicitudFormScreen(
                 minLines = 3
             )
 
-            // Selector Categoría
-            ExposedDropdownMenuBox(
-                expanded = expandedCat,
-                onExpandedChange = { expandedCat = !expandedCat }
-            ) {
-                OutlinedTextField(
-                    value = categoria,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Categoría") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCat) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
-                )
-                ExposedDropdownMenu(
+            // Consumo API: Selector de Servicio dinámico
+            if (catalogoApi.isNotEmpty()) {
+                val categoriasUnicas = catalogoApi.map { it.categoria }.distinct()
+                
+                ExposedDropdownMenuBox(
                     expanded = expandedCat,
-                    onDismissRequest = { expandedCat = false }
+                    onExpandedChange = { if (!tecnicoNoPuedeEditar) expandedCat = !expandedCat }
                 ) {
-                    categorias.forEach { item ->
-                        DropdownMenuItem(
-                            text = { Text(item) },
-                            onClick = {
-                                categoria = item
-                                expandedCat = false
-                            }
-                        )
+                    OutlinedTextField(
+                        value = categoria,
+                        onValueChange = {},
+                        readOnly = true,
+                        enabled = !tecnicoNoPuedeEditar,
+                        label = { Text("Categoría (Desde API)") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCat) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expandedCat,
+                        onDismissRequest = { expandedCat = false }
+                    ) {
+                        categoriasUnicas.forEach { cat ->
+                            DropdownMenuItem(
+                                text = { Text(cat) },
+                                onClick = {
+                                    categoria = cat
+                                    // Resetear el servicio al cambiar la categoría
+                                    servicio = "" 
+                                    expandedCat = false
+                                }
+                            )
+                        }
                     }
                 }
+
+                // Filtrar los servicios basándose en la categoría seleccionada
+                val serviciosFiltrados = catalogoApi.filter { it.categoria == categoria }
+
+                ExposedDropdownMenuBox(
+                    expanded = expandedServ,
+                    onExpandedChange = { if (!tecnicoNoPuedeEditar && serviciosFiltrados.isNotEmpty()) expandedServ = !expandedServ }
+                ) {
+                    OutlinedTextField(
+                        value = servicio,
+                        onValueChange = {},
+                        readOnly = true,
+                        enabled = !tecnicoNoPuedeEditar && serviciosFiltrados.isNotEmpty(),
+                        label = { Text("Servicio / Modalidad (Desde API)") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedServ) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expandedServ,
+                        onDismissRequest = { expandedServ = false }
+                    ) {
+                        serviciosFiltrados.forEach { serv ->
+                            DropdownMenuItem(
+                                text = { Text(serv.descripcion) },
+                                onClick = {
+                                    servicio = serv.descripcion
+                                    expandedServ = false
+                                }
+                            )
+                        }
+                    }
+                }
+            } else {
+                // Comportamiento Offline (Sin API)
+                ExposedDropdownMenuBox(
+                    expanded = expandedCat,
+                    onExpandedChange = { if (!tecnicoNoPuedeEditar) expandedCat = !expandedCat }
+                ) {
+                    OutlinedTextField(
+                        value = categoria,
+                        onValueChange = {},
+                        readOnly = true,
+                        enabled = !tecnicoNoPuedeEditar,
+                        label = { Text("Categoría") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCat) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expandedCat,
+                        onDismissRequest = { expandedCat = false }
+                    ) {
+                        categorias.forEach { item ->
+                            DropdownMenuItem(
+                                text = { Text(item) },
+                                onClick = {
+                                    categoria = item
+                                    expandedCat = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = servicio,
+                    onValueChange = { servicio = it },
+                    readOnly = tecnicoNoPuedeEditar,
+                    enabled = !tecnicoNoPuedeEditar,
+                    label = { Text("Modalidad / Servicio (Opcional)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             // REQUISITO CLAVE: El cliente NO define ni ve la prioridad. Solo Administrador o Técnico la configuran.
@@ -214,48 +292,6 @@ fun SolicitudFormScreen(
                         }
                     }
                 }
-            }
-
-            // Consumo API: Selector de Servicio dinámico
-            if (catalogoApi.isNotEmpty()) {
-                ExposedDropdownMenuBox(
-                    expanded = expandedServ,
-                    onExpandedChange = { if (!tecnicoNoPuedeEditar) expandedServ = !expandedServ }
-                ) {
-                    OutlinedTextField(
-                        value = servicio,
-                        onValueChange = {},
-                        readOnly = true,
-                        enabled = !tecnicoNoPuedeEditar,
-                        label = { Text("Servicio / Modalidad (Desde API)") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedServ) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = expandedServ,
-                        onDismissRequest = { expandedServ = false }
-                    ) {
-                        catalogoApi.forEach { serv ->
-                            DropdownMenuItem(
-                                text = { Text("${serv.categoria} - ${serv.descripcion}") },
-                                onClick = {
-                                    servicio = serv.descripcion
-                                    categoria = serv.categoria
-                                    expandedServ = false
-                                }
-                            )
-                        }
-                    }
-                }
-            } else {
-                OutlinedTextField(
-                    value = servicio,
-                    onValueChange = { servicio = it },
-                    readOnly = tecnicoNoPuedeEditar,
-                    enabled = !tecnicoNoPuedeEditar,
-                    label = { Text("Modalidad / Servicio (Opcional)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
 
             // Selector Estado (Solo Administrador o Técnico pueden cambiar el estado de atención)

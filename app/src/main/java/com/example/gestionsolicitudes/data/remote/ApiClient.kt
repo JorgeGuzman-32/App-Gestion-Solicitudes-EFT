@@ -5,7 +5,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object ApiClient {
     // IMPORTANTE: Ajustar URL base dependiendo de donde ejecutes el backend (Spring Boot)
-    // Para emulador y Spring Boot local: http://10.0.2.2:8080/
+    // Para emulador y Spring Boot local: http://10.0.2.2:8081/
     // Para dispositivo físico: IP de la red WiFi (ej. http://192.168.1.100:8080/)
     private const val BASE_URL = "http://10.0.2.2:8081/"
 
